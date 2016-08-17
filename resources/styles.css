@@ -1,0 +1,34 @@
+body {
+  margin: 0px;
+  padding: 0px;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none; 
+
+  min-height: 400px;  
+}
+
+.navbar {
+  background-color: #DEE9FF;
+}
+
+#One { 
+  background-color: white;
+  overflow: hidden;
+}
+
+#splitter { 
+  background-color: black;
+  overflow: hidden;
+  cursor: col-resize;
+
+}
+
+#Two { 
+  background-color: lightblue;
+  overflow: hidden;
+}
+
+
