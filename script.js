@@ -1,14 +1,10 @@
-first = new Graph({
-	ratio: 1,
+var first = new Graph({
+	ratio: 0.8,
 	color: "red"
 })
 
-first.visible = false;
-
-second = new Graph({
-	ratio: 1,
+var second = new Graph({
+	ratio: 1.5,
 	color: "blue"
 })
-
-
 

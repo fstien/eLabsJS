@@ -7,6 +7,8 @@ var lab = {
 
 	graphArray: [],
 
+	visibleGraphs: [],
+
 	UI: {
 		browser: { 
 			width: $(window).width(),
@@ -58,17 +60,17 @@ var lab = {
 		}
 	},
 
-	visibleGraphCount: function() { 
-		var graphArrayLenght = 0;
-		// Count the number of graphs which are visible 
+	defineVisibleGraphs: function() { 
+		this.visibleGraphs = [];
 		for(var i in this.graphArray) { 
 			if(this.graphArray[i].visible) { 
-				graphArrayLenght += 1;
+				this.visibleGraphs.push(this.graphArray[i]);
 			}
-		}
-		return(graphArrayLenght)
+		}	
+
 	},
 
+	// Resize the UI elements when the desktop browser window changes size	
 	canvasResize: function() { 
 		// Override the control pane size if it is outside the boundaries
 		this.UI.control.widthSize = Math.min(Math.max(this.UI.control.widthSize, this.UI.control.min), this.UI.control.max);
@@ -110,6 +112,7 @@ var lab = {
 		this.defineBoxes();
 	},
 
+	// Convert the canvas to a retina canvas. Call this every time the canvas is resized.
 	retinaTransform: function() { 
 		// Tranform the lab for retina devices testing
 	    var oldWidth = canvasVar.width;
@@ -125,109 +128,131 @@ var lab = {
 		ctx.scale(1,-1);
 	},
 
+	// Set the box properties for a given graph, given the coordinates of the origin, the width and height (for desktop)
 	setGraphInBox: function(i, X, Y, W, H) { 
-
-        if ( (W/H) < this.graphArray[i].ratio ) { 
-	        this.graphArray[i].box.x0 = X;
-	        this.graphArray[i].box.y0 = Y + H/2 - (W/this.graphArray[i].ratio)/2;
-	        this.graphArray[i].box.width = W;
-	        this.graphArray[i].box.height = W/this.graphArray[i].ratio;
+        if ( (W/H) < this.visibleGraphs[i].ratio ) { 
+	        this.visibleGraphs[i].box.x0 = X;
+	        this.visibleGraphs[i].box.y0 = Y + H/2 - (W/this.visibleGraphs[i].ratio)/2;
+	        this.visibleGraphs[i].box.width = W;
+	        this.visibleGraphs[i].box.height = W/this.visibleGraphs[i].ratio;
         }
         else { 
-	        this.graphArray[i].box.x0 = X + W/2 - (H*this.graphArray[i].ratio)/2;
-	        this.graphArray[i].box.y0 = Y;
-	        this.graphArray[i].box.width = H*this.graphArray[i].ratio;
-	        this.graphArray[i].box.height = H;
+	        this.visibleGraphs[i].box.x0 = X + W/2 - (H*this.visibleGraphs[i].ratio)/2;
+	        this.visibleGraphs[i].box.y0 = Y;
+	        this.visibleGraphs[i].box.width = H*this.visibleGraphs[i].ratio;
+	        this.visibleGraphs[i].box.height = H;
         }
 	},
 
+	// Define the box coordinates and dimensions
 	defineBoxes: function() { 
-		if(!lab.UI.browser.mobile) { 
 
-			// Set the box properties for a given graph, given the coordinates of the origin, the width and height (for desktop)
-			function setGraphInBox(i, X, Y, W, H) { 
-		        if ( (W/H) < this.graphArray[i].ratio ) { 
-			        this.graphArray[i].box.x0 = X;
-			        this.graphArray[i].box.y0 = Y + H/2 - (W/this.graphArray[i].ratio)/2;
-			        this.graphArray[i].box.width = W;
-			        this.graphArray[i].box.height = W/this.graphArray[i].ratio;
-		        }
-		        else { 
-			        this.graphArray[i].box.x0 = X + W/2 - (H*this.graphArray[i].ratio)/2;
-			        this.graphArray[i].box.y0 = Y;
-			        this.graphArray[i].box.width = H*this.graphArray[i].ratio;
-			        this.graphArray[i].box.height = H;
-		        }
+		/*
+		var fillBox = function(index) { 
+	        // Loop over the graphs and set coordinates
+	        for (var i in graphArray) {
+	         	// Initial height is the height of the canvas
+	         	var yHeight = canvas.UI.height;
+	         	// Only increment the Y coordinate for all graphs execpt for the first one
+	         	for(y = 0; y <= i; y++) { 
+	         		// Increment by the height of the previous graph, in order to sum the heights of all previous graphs 
+	         		yHeight -= canvas.UI.width/graphArray[y].ratio;
+	         	} 
+	         	// Round the height
+	         	yHeight = Math.round(yHeight)
+
+			   	// Set the values on the graphs
+			    graphArray[i].box.y0 = yHeight;
+			   	graphArray[i].box.x0 = 0;
+		        graphArray[i].box.width = canvas.UI.width;
+		        graphArray[i].box.height = canvas.UI.width/graphArray[i].ratio;
+	        }
+	 	}
+		
+		if(canvas.UI.mobile) { 
+			// compute the canvas height for mobile by looping over the graphs
+			var canvasHeight = 0;
+			for(i = 0; i < graphArray.length; i++) { 	
+				canvasHeight += canvas.UI.width/graphArray[i].ratio;
 			}
 
-			switch(lab.visibleGraphCount()) {
+			canvasHeight = Math.ceil(canvasHeight)
+			canvas.UI.height = canvasHeight;
+			fillBox(graphArray.length)
+		}
+		*/
 
+		if(lab.UI.browser.mobile) { 
+			for (var i in this.visibleGraphs) {
+	         	// Initial height is the height of the canvas
+	         	var yHeight = this.UI.canvas.height;
+	         	// Only increment the Y coordinate for all graphs execpt for the first one
+	         	for(y = 0; y <= i; y++) { 
+	         		// Increment by the height of the previous graph, in order to sum the heights of all previous graphs 
+	         		yHeight -= this.UI.canvas.width/this.visibleGraphs[y].ratio;
+	         	} 
+	         	// Round the height
+	         	yHeight = Math.round(yHeight)
+
+			   	// Set the values on the graphs
+			    this.visibleGraphs[i].box.y0 = yHeight;
+			   	this.visibleGraphs[i].box.x0 = 0;
+		        this.visibleGraphs[i].box.width = this.UI.canvas.width;
+		        this.visibleGraphs[i].box.height = this.UI.canvas.width/this.visibleGraphs[i].ratio;
+	        }
+
+		}
+		else { 
+			switch(lab.visibleGraphs.length) {
 			    case 1:
 				    this.setGraphInBox(0, 0, 0, this.UI.canvas.width, this.UI.canvas.height)
 			        break;
-				
 
 			    case 2:        
 			        // If the aspect ratio of the canvas is larger than the average aspect ratios of the graphs, then stack them horizontally (side by side)
-			        if (this.UI.canvas.ratio > (this.graphArray[0].ratio + this.graphArray[1].ratio)/2) { 
-			        	this.setGraphInBox(0, 0, 0, canvas.UI.width/2, canvas.UI.height)
-			        	this.setGraphInBox(1, canvas.UI.width/2, 0, canvas.UI.width/2, canvas.UI.height)
+			        if(this.UI.canvas.ratio > (this.visibleGraphs[0].ratio + this.visibleGraphs[1].ratio)/2) { 
+			        	this.setGraphInBox(0, 0, 0, this.UI.canvas.width/2, this.UI.canvas.height)
+			        	this.setGraphInBox(1, this.UI.canvas.width/2, 0, this.UI.canvas.width/2, this.UI.canvas.height)
 			        }
 			        // Otherwise stack them vertically (on top of each other)
 			        else { 
-			        	setGraphInBox(0, 0, canvas.UI.height/2, canvas.UI.width, canvas.UI.height/2)
-			        	setGraphInBox(1, 0, 0, canvas.UI.width, canvas.UI.height/2)
+			        	this.setGraphInBox(0, 0, this.UI.canvas.height/2, this.UI.canvas.width, this.UI.canvas.height/2)
+			        	this.setGraphInBox(1, 0, 0, this.UI.canvas.width, this.UI.canvas.height/2)
 			        }
 			        break;
-
-			    /*
-				
 
 			    case 3:
 			        // If the aspect ratio of the canvas is larger than the average aspect ratios of the graphs, then form a triangle
-					if (canvas.UI.ratio > (graphArray[0].ratio + graphArray[1].ratio + graphArray[2].ratio)/3) { 
-			        	setGraphInBox(0, 0, canvas.UI.height/2, canvas.UI.width, canvas.UI.height/2)
-			        	setGraphInBox(1, 0, 0, canvas.UI.width/2, canvas.UI.height/2)
-			        	setGraphInBox(2, canvas.UI.width/2, 0, canvas.UI.width/2, canvas.UI.height/2)
+					if (this.UI.canvas.ratio > (this.graphArray[0].ratio + this.graphArray[1].ratio + this.graphArray[2].ratio)/3) { 
+			        	this.setGraphInBox(0, 0, this.UI.canvas.height/2, this.UI.canvas.width, this.UI.canvas.height/2)
+			        	this.setGraphInBox(1, 0, 0, this.UI.canvas.width/2, this.UI.canvas.height/2)
+			        	this.setGraphInBox(2, this.UI.canvas.width/2, 0, this.UI.canvas.width/2, this.UI.canvas.height/2)
 			        }
 			        // Otherwise stack them vertically (on top of each other)
 			        else { 
-			        	setGraphInBox(0, 0, canvas.UI.height*2/3, canvas.UI.width, canvas.UI.height/3)
-			        	setGraphInBox(1, 0, canvas.UI.height*1/3, canvas.UI.width, canvas.UI.height/3)
-			        	setGraphInBox(2, 0, 0, canvas.UI.width, canvas.UI.height/3)
+			        	this.setGraphInBox(0, 0, this.UI.canvas.height*2/3, this.UI.canvas.width, this.UI.canvas.height/3)
+			        	this.setGraphInBox(1, 0, this.UI.canvas.height*1/3, this.UI.canvas.width, this.UI.canvas.height/3)
+			        	this.setGraphInBox(2, 0, 0, this.UI.canvas.width, this.UI.canvas.height/3)
 			        }
 			        break;
-
+				
+				
 			    case 4:
 			    	// Define a grid of graphs
-				    setGraphInBox(0, 0, canvas.UI.height/2, canvas.UI.width/2, canvas.UI.height/2)
-			    	setGraphInBox(1, canvas.UI.width/2, canvas.UI.height/2, canvas.UI.width/2, canvas.UI.height/2)
-			    	setGraphInBox(2, 0, 0, canvas.UI.width/2, canvas.UI.height/2)
-			    	setGraphInBox(3, canvas.UI.width/2, 0, canvas.UI.width/2, canvas.UI.height/2)
+				    this.setGraphInBox(0, 0, this.UI.canvas.height/2, this.UI.canvas.width/2, this.UI.canvas.height/2)
+			    	this.setGraphInBox(1, this.UI.canvas.width/2, this.UI.canvas.height/2, this.UI.canvas.width/2, this.UI.canvas.height/2)
+			    	this.setGraphInBox(2, 0, 0, this.UI.canvas.width/2, this.UI.canvas.height/2)
+			    	this.setGraphInBox(3, this.UI.canvas.width/2, 0, this.UI.canvas.width/2, this.UI.canvas.height/2)
 			        break;
-
-			    */
 
 			    default:
 			        console.log("ERROR: Number of objects in graph not between 1 and 4.")
 			}
-
-
-
-
-
 		}
 
 	}
 
 }
-
-
-
-// Resize the UI elements when the desktop browser window changes size	
-
-
-// Convert the canvas to a retina canvas. Call this every time the canvas is resized.
 
 
 
@@ -273,16 +298,51 @@ function Graph(props) {
 
 	// Add the graph to the lab graphArray
 	lab.graphArray.push(this);
+	
+	// For mobile devies, it is necessary to resize the canvas
+	if(lab.UI.browser.mobile) { 
+		lab.canvasResize();
+	}
 
-	
-	lab.canvasResize();
-	
+	// Redefine the array of visible graphs
+	lab.defineVisibleGraphs();
+
+	// Redefine the boxes
+	lab.defineBoxes();
 }
+
+
+Graph.prototype.hide = function() { 
+	this.visible = false; 
+	
+	// For mobile devies, it is necessary to resize the canvas
+	lab.defineVisibleGraphs();
+
+	if(lab.UI.browser.mobile) { 
+		lab.canvasResize();
+	}
+
+	lab.defineBoxes();
+}
+
+Graph.prototype.show = function() { 
+	this.visible = true; 
+
+	lab.defineVisibleGraphs();
+
+	// For mobile devies, it is necessary to resize the canvas
+	if(lab.UI.browser.mobile) { 
+		lab.canvasResize();
+	}
+
+	lab.defineBoxes();
+}
+
+
 
 
 // WHEN SCRIPT.JS IS LOADED
 $(document).ready(function() { 
-
 
 // compute the constant ratio to scale the canvas with
 var devicePixelRatio = window.devicePixelRatio || 1;
@@ -293,9 +353,12 @@ lab.UI.pixelRatio = (devicePixelRatio/backingStoreRatio)*1;
 // Apply different CSS properties depending on whether the device is mobile
 lab.setCSS()
 
-
 // Set the initial size
 lab.canvasResize()
+
+// Define the initial boxes
+lab.defineBoxes()
+
 // Resize every time the window resizes.
 window.addEventListener("resize", lab.canvasResize.bind(lab) );
 
@@ -319,8 +382,6 @@ $("#splitter").mouseup(function() {
 	dragSwitch = false;
 });
 
-lab.defineBoxes()
-
 // Call Animation loop
 window.requestAnimationFrame(drawScreen);
 
@@ -336,15 +397,12 @@ function drawScreen() {
 	
 
 	// Loop over the graphs to draw them
-	for (var i in lab.graphArray) {
-
-		// Backrgrount color
+	for (var i in lab.visibleGraphs) {
 		ctx.beginPath();
-		ctx.fillStyle = lab.graphArray[i].color;
-		ctx.rect(lab.graphArray[i].box.x0, lab.graphArray[i].box.y0, lab.graphArray[i].box.width, lab.graphArray[i].box.height);
+		ctx.fillStyle = lab.visibleGraphs[i].color;
+		ctx.rect(lab.visibleGraphs[i].box.x0, lab.visibleGraphs[i].box.y0, lab.visibleGraphs[i].box.width, lab.visibleGraphs[i].box.height);
 		ctx.fill()
 		ctx.closePath();
-
 	}
 
 
