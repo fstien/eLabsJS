@@ -4,9 +4,15 @@ var first = new Graph({
 	scaleX: 4
 })
 
+
 var second = new Graph({
-	ratio: 1.5,
+	ratio: 1.2,
 	color: "blue",
-	scaleX: 15,
+	scaleX: 10,
+	axes: { 
+		count: 1,
+	
+	}
 })
+
 

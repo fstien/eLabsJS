@@ -117,6 +117,7 @@ var lab = {
 		// Apply retina transformation
 		this.retinaTransform();
 		this.defineBoxes();
+		this.setAllPlots();
 	},
 
 	// Convert the canvas to a retina canvas. Call this every time the canvas is resized.
@@ -221,28 +222,31 @@ var lab = {
 			        console.log("ERROR: Number of objects in graph not between 1 and 4.")
 			}
 		}
-
-		this.setAllPlots();
 	}, 
 
 	setAllPlots: function() { 
+
 		var totalDist = 0;
 		var distCount = 0
 
+		// Compute the sum of the widths and heights of boxes and the number of sides
 		for(var i in this.visibleGraphs) { 
 			totalDist += this.visibleGraphs[i].box.width;
 			totalDist += this.visibleGraphs[i].box.height;
-
 			distCount += 2;
 		}
 
+		// Compute the mean
 		var meanDist = totalDist/distCount;
+
+		// Set a different padding for mobile and desktop
 		this.UI.canvas.padding = this.UI.browser.mobile ? meanDist*0.12 : meanDist*0.12;
 
 		// Define the plot as soon as the graph is defined
 		for (var i in this.graphArray) {
 			this.graphArray[i].setPlot();
-			this.graphArray[i].setUnit();
+			this.graphArray[i].setScale(this.graphArray[i].scaleX);
+			this.graphArray[i].setAxes()
 		}
 
 	}
@@ -259,14 +263,14 @@ function Graph(props) {
 	// The initial number of unit distances on the horizontal axis
 	this.scaleX = props.scaleX || 10;
 
-	// The pixel distance of a unit distance, defined in the setUnit method
+	// The pixel distance of a unit distance, defined in the setScale method
 	this.unitPixel;
 
-	// The number of unit distances on the vertical axis, defined in the setUnit method
+	// The number of unit distances on the vertical axis, defined in the setScale method
 	this.scaleY;	
 
 	// Whether or not the graph appears 
-	this.visible = true;
+	this.visible = false;
 
 	// Create the empty box object which will store coordinates for the box including paddings
 	this.box = {};
@@ -284,7 +288,13 @@ function Graph(props) {
 	this.color = props.color || "white";
 
 	// Set the default number of axes to 1
-	this.axes = props.axes || 1;
+	this.axes = { 
+		count: 2 || props.axes.count, 
+		visible: true,
+		pos: {
+			// x0, x1, y1, y2
+		}
+	}
 
 	// Boolean for if the graph is being hovered
 	this.hover = false;
@@ -308,6 +318,9 @@ function Graph(props) {
 
 	// Redefine the boxes
 	lab.defineBoxes();
+
+	// Define the plots
+	lab.setAllPlots()
 }
 
 
@@ -322,6 +335,7 @@ Graph.prototype.hide = function() {
 	}
 
 	lab.defineBoxes();
+	lab.setAllPlots()
 }
 
 Graph.prototype.show = function() { 
@@ -335,6 +349,7 @@ Graph.prototype.show = function() {
 	}
 
 	lab.defineBoxes();
+	lab.setAllPlots()
 }
 
 Graph.prototype.setPlot = function() {
@@ -347,9 +362,9 @@ Graph.prototype.setPlot = function() {
 	this.plot.height = this.box.height - 2*lab.UI.canvas.padding;
 }
 
-Graph.prototype.setUnit = function() { 
+Graph.prototype.setScale = function(scale) { 
 	// Set the pixel size of a unit distance
-	this.unitPixel = this.plot.width/this.scaleX;
+	this.unitPixel = this.plot.width/scale;
 	this.scaleY = this.plot.height/this.unitPixel;	
 }
 
@@ -374,6 +389,15 @@ Graph.prototype.distY = function(pixelY) {
 	return( (pixelY - this.plot.y0)/this.unitPixel );
 }
 
+Graph.prototype.setAxes = function() {
+	// Define the cartesian coordinates of the origin
+	this.axes.pos.x0 = this.plot.x0;
+	this.axes.pos.y0 = this.plot.y0;
+
+	this.axes.pos.x1 = this.plot.x0 + this.plot.width;
+	this.axes.pos.y1 = this.plot.y0 + this.plot.height;	
+}
+
 
 
 // WHEN SCRIPT.JS IS LOADED
@@ -393,6 +417,9 @@ lab.canvasResize()
 
 // Define the initial boxes
 lab.defineBoxes()
+
+// Define the plots
+lab.setAllPlots()
 
 // Resize every time the window resizes.
 window.addEventListener("resize", lab.canvasResize.bind(lab) );
@@ -416,6 +443,23 @@ $("#splitter").mousedown(function() {
 $("#splitter").mouseup(function() {
 	dragSwitch = false;
 });
+
+
+Graph.prototype.drawAxes = function() { 
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 5;
+	ctx.lineCap = 'round';
+
+
+	ctx.beginPath();
+	ctx.moveTo(this.axes.pos.x1, this.axes.pos.y0);
+	ctx.lineTo(this.axes.pos.x0 , this.axes.pos.y0);
+	ctx.lineTo(this.axes.pos.x0, this.axes.pos.y1);
+	ctx.stroke();
+	ctx.closePath();
+
+}
+
 
 // Performance monitoring for development purposes
 var stats = new Stats(); stats.showPanel( 0 ); document.body.appendChild( stats.dom );
@@ -451,28 +495,28 @@ function drawScreen() {
 
 		ctx.strokeStyle = "lightgrey";
 		ctx.lineWidth = 3;
-
 		for (j = 0; j <= lab.visibleGraphs[i].scaleX; j++) { 
 		    ctx.beginPath();
 			ctx.moveTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(0));
 			ctx.lineTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(lab.visibleGraphs[i].scaleY));
 			ctx.stroke();
-			ctx.closePath();
 		}
-
 		for (j = 0; j <= lab.visibleGraphs[i].scaleY; j++) { 
 		    ctx.beginPath();
 			ctx.moveTo(lab.visibleGraphs[i].pixelX(0), lab.visibleGraphs[i].pixelY(j));
 			ctx.lineTo(lab.visibleGraphs[i].pixelX(lab.visibleGraphs[i].scaleX), lab.visibleGraphs[i].pixelY(j));
 			ctx.stroke();
-			ctx.closePath();
 		}
+		ctx.closePath();
+
+		lab.visibleGraphs[i].drawAxes();
 
 	}
 
 	if(!lab.UI.browser.mobile) {  
 		$("#text1").text( JSON.stringify( "X: " + lab.mouse.x ));
 		$("#text2").text( JSON.stringify( "Y: " + lab.mouse.y ));
+		
 	}
 
 	// Temporary
