@@ -3,6 +3,7 @@ var canvasVar = document.createElement('canvas');
 document.getElementById('One').appendChild(canvasVar);
 var ctx = canvasVar.getContext("2d");
 
+
 var lab = {
 
 	graphArray: [],
@@ -19,6 +20,9 @@ var lab = {
 			width: 0, 
 			height: 0, 
 			ratio: 1,
+
+			// The padding of the plots which is shared accross Graphs
+			padding: 10,
 		},
 		menu: { 
 			desktop: 40,
@@ -30,6 +34,9 @@ var lab = {
 			max: 450, 
 			widthSize: Math.round((Math.sqrt($(window).width()))*12),
 		}
+	},
+
+	defaults: { 
 	},
 	
 	mouse: { 
@@ -147,41 +154,6 @@ var lab = {
 	// Define the box coordinates and dimensions
 	defineBoxes: function() { 
 
-		/*
-		var fillBox = function(index) { 
-	        // Loop over the graphs and set coordinates
-	        for (var i in graphArray) {
-	         	// Initial height is the height of the canvas
-	         	var yHeight = canvas.UI.height;
-	         	// Only increment the Y coordinate for all graphs execpt for the first one
-	         	for(y = 0; y <= i; y++) { 
-	         		// Increment by the height of the previous graph, in order to sum the heights of all previous graphs 
-	         		yHeight -= canvas.UI.width/graphArray[y].ratio;
-	         	} 
-	         	// Round the height
-	         	yHeight = Math.round(yHeight)
-
-			   	// Set the values on the graphs
-			    graphArray[i].box.y0 = yHeight;
-			   	graphArray[i].box.x0 = 0;
-		        graphArray[i].box.width = canvas.UI.width;
-		        graphArray[i].box.height = canvas.UI.width/graphArray[i].ratio;
-	        }
-	 	}
-		
-		if(canvas.UI.mobile) { 
-			// compute the canvas height for mobile by looping over the graphs
-			var canvasHeight = 0;
-			for(i = 0; i < graphArray.length; i++) { 	
-				canvasHeight += canvas.UI.width/graphArray[i].ratio;
-			}
-
-			canvasHeight = Math.ceil(canvasHeight)
-			canvas.UI.height = canvasHeight;
-			fillBox(graphArray.length)
-		}
-		*/
-
 		if(lab.UI.browser.mobile) { 
 			for (var i in this.visibleGraphs) {
 	         	// Initial height is the height of the canvas
@@ -250,22 +222,48 @@ var lab = {
 			}
 		}
 
+		this.setAllPlots();
+	}, 
+
+	setAllPlots: function() { 
+		var totalDist = 0;
+		var distCount = 0
+
+		for(var i in this.visibleGraphs) { 
+			totalDist += this.visibleGraphs[i].box.width;
+			totalDist += this.visibleGraphs[i].box.height;
+
+			distCount += 2;
+		}
+
+		var meanDist = totalDist/distCount;
+		this.UI.canvas.padding = this.UI.browser.mobile ? meanDist*0.12 : meanDist*0.12;
+
+		// Define the plot as soon as the graph is defined
+		for (var i in this.graphArray) {
+			this.graphArray[i].setPlot();
+			this.graphArray[i].setUnit();
+		}
+
 	}
 
 }
 
 
 
-// Define the graph ratio (width/height), the padding in pixes and the scalse as a proportion of the plotUnitWidth in terms of the number of units on the X-axis
+// Define the graph ratio (width/height), the padding in pixes and the scalse as a proportion of the plotUnit in terms of the number of units on the X-axis
 function Graph(props) {
 	// The width/height ratio
 	this.ratio = props.ratio || 1;
 
-	// The padding size for the plot in the box
-	this.padding = props.padding || 10;
+	// The initial number of unit distances on the horizontal axis
+	this.scaleX = props.scaleX || 10;
 
-	// The scale?
-	this.scale = props.scale || 1;
+	// The pixel distance of a unit distance, defined in the setUnit method
+	this.unitPixel;
+
+	// The number of unit distances on the vertical axis, defined in the setUnit method
+	this.scaleY;	
 
 	// Whether or not the graph appears 
 	this.visible = true;
@@ -277,9 +275,9 @@ function Graph(props) {
 	this.plot = {};
 
 	// The default number of pixels by which the plot can overflow 
-	this.plotPadding = props.padding || 4;
+	this.plotPadding = props.plotPadding || 4;
 
-	// Object of elements on the 
+	// Object of elements on the graph
 	this.elements = {}
 
 	// Set the default background color to white
@@ -294,6 +292,7 @@ function Graph(props) {
 	// The constructor name 
 	this.className = arguments.callee.toString().match(/function\s+([^\s\(]+)/)[1];
 
+	// The index of the grah in graphArray !! Not in the visibleGraphs
 	this.arrayIndex = lab.graphArray.length;
 
 	// Add the graph to the lab graphArray
@@ -338,6 +337,42 @@ Graph.prototype.show = function() {
 	lab.defineBoxes();
 }
 
+Graph.prototype.setPlot = function() {
+	// Define the cartesian coordinates of the origin
+	this.plot.x0 = this.box.x0 + lab.UI.canvas.padding;
+	this.plot.y0 = this.box.y0 + lab.UI.canvas.padding;
+
+	// Define the width and height of the plot
+	this.plot.width = this.box.width - 2*lab.UI.canvas.padding;
+	this.plot.height = this.box.height - 2*lab.UI.canvas.padding;
+}
+
+Graph.prototype.setUnit = function() { 
+	// Set the pixel size of a unit distance
+	this.unitPixel = this.plot.width/this.scaleX;
+	this.scaleY = this.plot.height/this.unitPixel;	
+}
+
+
+// Compute the pixel X coordinate of a point distance of a graph
+Graph.prototype.pixelX = function(distX) {
+	return(this.plot.x0 + this.unitPixel*distX);
+}
+
+// Compute the pixel Y coordinate of a point distance of a graph
+Graph.prototype.pixelY = function(distY) {
+	return(this.plot.y0 + this.unitPixel*distY);
+}
+
+// Compute the distance X coordinate of a pixel of a graph
+Graph.prototype.distX = function(pixelX) {
+	return( (pixelX - this.plot.x0)/this.unitPixel );
+}
+
+// Compute the distance Y coordinate of a pixel of a graph
+Graph.prototype.distY = function(pixelY) {
+	return( (pixelY - this.plot.y0)/this.unitPixel );
+}
 
 
 
@@ -348,7 +383,7 @@ $(document).ready(function() {
 var devicePixelRatio = window.devicePixelRatio || 1;
 // determine the backing store ratio
 var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio ||ctx.backingStorePixelRatio || 1;
-lab.UI.pixelRatio = (devicePixelRatio/backingStoreRatio)*1;
+lab.UI.pixelRatio = (devicePixelRatio/backingStoreRatio)*2;
 
 // Apply different CSS properties depending on whether the device is mobile
 lab.setCSS()
@@ -382,19 +417,22 @@ $("#splitter").mouseup(function() {
 	dragSwitch = false;
 });
 
+// Performance monitoring for development purposes
+var stats = new Stats(); stats.showPanel( 0 ); document.body.appendChild( stats.dom );
+
 // Call Animation loop
 window.requestAnimationFrame(drawScreen);
 
 // The animation loop
 function drawScreen() {
+
+	// Temporary
+	stats.begin();
+
 	// White refresh
 	//ctx.clearRect(0,0,canvasVar.width,canvasVar.height);
 	ctx.fillStyle = "orange";
-	ctx.fillRect(0,0,canvasVar.width,canvasVar.height);
-
-	ctx.fillStyle = "green";
-	ctx.fillText("Hello World",100,50);	
-	
+	ctx.fillRect(0,0,canvasVar.width,canvasVar.height);	
 
 	// Loop over the graphs to draw them
 	for (var i in lab.visibleGraphs) {
@@ -403,8 +441,42 @@ function drawScreen() {
 		ctx.rect(lab.visibleGraphs[i].box.x0, lab.visibleGraphs[i].box.y0, lab.visibleGraphs[i].box.width, lab.visibleGraphs[i].box.height);
 		ctx.fill()
 		ctx.closePath();
+
+		// Draw the plot in white 
+		ctx.beginPath();
+		ctx.fillStyle = "white";
+		ctx.rect(lab.visibleGraphs[i].plot.x0, lab.visibleGraphs[i].plot.y0, lab.visibleGraphs[i].plot.width, lab.visibleGraphs[i].plot.height);
+		ctx.fill()
+		ctx.closePath();
+
+		ctx.strokeStyle = "lightgrey";
+		ctx.lineWidth = 3;
+
+		for (j = 0; j <= lab.visibleGraphs[i].scaleX; j++) { 
+		    ctx.beginPath();
+			ctx.moveTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(0));
+			ctx.lineTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(lab.visibleGraphs[i].scaleY));
+			ctx.stroke();
+			ctx.closePath();
+		}
+
+		for (j = 0; j <= lab.visibleGraphs[i].scaleY; j++) { 
+		    ctx.beginPath();
+			ctx.moveTo(lab.visibleGraphs[i].pixelX(0), lab.visibleGraphs[i].pixelY(j));
+			ctx.lineTo(lab.visibleGraphs[i].pixelX(lab.visibleGraphs[i].scaleX), lab.visibleGraphs[i].pixelY(j));
+			ctx.stroke();
+			ctx.closePath();
+		}
+
 	}
 
+	if(!lab.UI.browser.mobile) {  
+		$("#text1").text( JSON.stringify( "X: " + lab.mouse.x ));
+		$("#text2").text( JSON.stringify( "Y: " + lab.mouse.y ));
+	}
+
+	// Temporary
+	stats.end();
 
 	window.requestAnimationFrame(drawScreen);
 }
