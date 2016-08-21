@@ -10,6 +10,8 @@ var lab = {
 
 	visibleGraphs: [],
 
+	variableArray: [],
+
 	UI: {
 		browser: { 
 			width: $(window).width(),
@@ -40,6 +42,7 @@ var lab = {
 		color: "grey",
 		width: 4,
 		scaleXdefault: 10,
+		ease: 0.1
 	},
 	
 	mouse: { 
@@ -245,6 +248,14 @@ var lab = {
 			this.graphArray[i].setScale(this.graphArray[i].scaleX);
 		}
 
+	},
+
+
+	variableUpdate: function() { 
+		for(var i in this.variableArray) { 
+			this.variableArray[i].easeUpdate();
+		}
+
 	}
 
 }
@@ -383,12 +394,19 @@ Graph.prototype.distY = function(pixelY) {
 
 // _________________ Variable _________________
 
-function Variable(props) {
-   this.val = props.val || 0;
-   this.min = props.min || 0;
-   this.max = props.max || lab.defaults.scaleXdefault;
-}
+var variableArray = [];
 
+function Variable(props) {
+	this.val = props.val || 0;
+	this.target = props.val || 0;
+
+	this.min = props.min || 0;
+	this.max = props.max || lab.defaults.scaleXdefault;
+
+	this.ease = props.ease || lab.defaults.ease;
+	// Push to the array of variables
+	lab.variableArray.push(this);
+}
 
 // The Variable prototype
 Variable.prototype = {
@@ -403,22 +421,49 @@ Variable.prototype = {
 		else { 
 			this.val = value;
 		}
+		this.target = this.val;
 	},
 	// Increment the variable
 	add: function(increment) { 
-		this.val = this.val + increment;
+		this.val += increment;
+		this.val = Math.min(Math.max(this.val, this.min), this.max);
+		this.target = this.val;
+	},
+
+	// Increment the variable
+	easeIncrement: function(increment) { 
+		this.val += increment;
 		this.val = Math.min(Math.max(this.val, this.min), this.max);
 	},
+
+	easeSet: function(value) { 
+		if(value > this.max) { 
+			this.target = this.max;
+		}
+		else if(value < this.min) { 
+			this.target = this.min;
+		}
+		else { 
+			this.target = value;
+		}
+	},	
+
+	easeAdd: function(increment) { 
+		this.target += increment;
+	},
    
+	easeUpdate: function() { 
+		var dist = this.target - this.val,
+			change = dist * this.ease;
+
+		this.easeIncrement(change);
+	},
+
 	// Return the rounded variable
 	round: function() { 
 		return( Math.round(this.val) )
 	},
 };
-
-Variable.prototype.update = function() { 
-	this.add(closureChange);
-}
 
 // _________________ Point _________________
 
@@ -622,8 +667,7 @@ function drawScreen() {
 
 	}
 
-	XPoint.update();
-
+	lab.variableUpdate()
 
 	pointTest.draw()
 

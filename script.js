@@ -12,7 +12,8 @@ var second = new Graph({
 })
 
 var XPoint = new Variable({
-	val: 4
+	val: 4,
+//	ease: 0.01
 })
 
 var YPoint = new Variable({
@@ -28,5 +29,4 @@ var pointTest = new Point({
 })
 
 
-var closureChange = 0.05;
-
+var easingPercent = 0.2;
