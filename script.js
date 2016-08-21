@@ -28,6 +28,5 @@ var pointTest = new Point({
 })
 
 
-var closureChange = 0.01;
+var closureChange = 0.05;
 
-closureChange = -0.01;

@@ -416,6 +416,10 @@ Variable.prototype = {
 	},
 };
 
+Variable.prototype.update = function() { 
+	this.add(closureChange);
+}
+
 // _________________ Point _________________
 
 // The point constructor which takes Variable objects as inputs
@@ -459,6 +463,7 @@ function Point(props) {
 
 // WHEN SCRIPT.JS IS LOADED
 $(document).ready(function() { 
+
 
 // compute the constant ratio to scale the canvas with
 var devicePixelRatio = window.devicePixelRatio || 1;
@@ -552,9 +557,6 @@ Graph.prototype.drawAxes = function() {
 	}
 }
 
-Variable.prototype.update = function() { 
-	this.add(closureChange);
-}
 
 Point.prototype.draw = function() { 
 	ctx.fillStyle = this.color;
