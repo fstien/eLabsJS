@@ -441,7 +441,7 @@ function Point(props) {
 	if(props.point[1] instanceof Variable) { 
 		this.y = point[1];
 	}
-	else { 
+	else {  
 		this.y = {};
 		this.y.val = point[1];
 	}
