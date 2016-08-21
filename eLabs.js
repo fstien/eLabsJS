@@ -250,7 +250,6 @@ var lab = {
 
 	},
 
-
 	variableUpdate: function() { 
 		for(var i in this.variableArray) { 
 			this.variableArray[i].easeUpdate();
@@ -326,71 +325,69 @@ function Graph(props) {
 	lab.setAllPlots()
 }
 
+Graph.prototype = {
 
-Graph.prototype.hide = function() { 
-	this.visible = false; 
-	
-	// For mobile devies, it is necessary to resize the canvas
-	lab.defineVisibleGraphs();
+	hide: function() { 
+		this.visible = false; 
+		
+		// For mobile devies, it is necessary to resize the canvas
+		lab.defineVisibleGraphs();
 
-	if(lab.UI.browser.mobile) { 
-		lab.canvasResize();
+		if(lab.UI.browser.mobile) { 
+			lab.canvasResize();
+		}
+
+		lab.defineBoxes();
+		lab.setAllPlots()
+	},
+
+	show: function() { 
+		this.visible = true; 
+
+		lab.defineVisibleGraphs();
+
+		// For mobile devies, it is necessary to resize the canvas
+		if(lab.UI.browser.mobile) { 
+			lab.canvasResize();
+		}
+
+		lab.defineBoxes();
+		lab.setAllPlots()
+	},
+
+	setPlot: function() {
+		// Define the cartesian coordinates of the origin
+		this.plot.x0 = this.box.x0 + lab.UI.canvas.padding;
+		this.plot.y0 = this.box.y0 + lab.UI.canvas.padding;
+
+		// Define the width and height of the plot
+		this.plot.width = this.box.width - 2*lab.UI.canvas.padding;
+		this.plot.height = this.box.height - 2*lab.UI.canvas.padding;
+	},
+
+	setScale: function(scale) { 
+		// Set the pixel size of a unit distance
+		this.unitPixel = this.plot.width/scale;
+		this.scaleY = this.plot.height/this.unitPixel;	
+	},
+
+	pixelX: function(distX) {
+		return(this.plot.x0 + this.unitPixel*distX);
+	},
+
+	pixelY: function(distY) {
+		return(this.plot.y0 + this.unitPixel*distY);
+	},
+
+	distX: function(pixelX) {
+		return( (pixelX - this.plot.x0)/this.unitPixel );
+	},
+
+	distY: function(pixelY) {
+		return( (pixelY - this.plot.y0)/this.unitPixel );
 	}
-
-	lab.defineBoxes();
-	lab.setAllPlots()
 }
 
-Graph.prototype.show = function() { 
-	this.visible = true; 
-
-	lab.defineVisibleGraphs();
-
-	// For mobile devies, it is necessary to resize the canvas
-	if(lab.UI.browser.mobile) { 
-		lab.canvasResize();
-	}
-
-	lab.defineBoxes();
-	lab.setAllPlots()
-}
-
-Graph.prototype.setPlot = function() {
-	// Define the cartesian coordinates of the origin
-	this.plot.x0 = this.box.x0 + lab.UI.canvas.padding;
-	this.plot.y0 = this.box.y0 + lab.UI.canvas.padding;
-
-	// Define the width and height of the plot
-	this.plot.width = this.box.width - 2*lab.UI.canvas.padding;
-	this.plot.height = this.box.height - 2*lab.UI.canvas.padding;
-}
-
-Graph.prototype.setScale = function(scale) { 
-	// Set the pixel size of a unit distance
-	this.unitPixel = this.plot.width/scale;
-	this.scaleY = this.plot.height/this.unitPixel;	
-}
-
-
-// Compute the pixel X coordinate of a point distance of a graph
-Graph.prototype.pixelX = function(distX) {
-	return(this.plot.x0 + this.unitPixel*distX);
-}
-
-// Compute the pixel Y coordinate of a point distance of a graph
-Graph.prototype.pixelY = function(distY) {
-	return(this.plot.y0 + this.unitPixel*distY);
-}
-
-// Compute the distance X coordinate of a pixel of a graph
-Graph.prototype.distX = function(pixelX) {
-	return( (pixelX - this.plot.x0)/this.unitPixel );
-}
-
-// Compute the distance Y coordinate of a pixel of a graph
-Graph.prototype.distY = function(pixelY) {
-	return( (pixelY - this.plot.y0)/this.unitPixel );
-}
 
 // _________________ Variable _________________
 
@@ -492,6 +489,8 @@ function Point(props) {
 	this.hoverColor = props.scolor || lab.defaults.color;
 
 	this.width = props.width || lab.defaults.width;
+	this.widthSave = props.width || lab.defaults.width;
+	this.widthTarget = props.width || lab.defaults.width;
 
 	this.hover = false;
 
@@ -504,6 +503,23 @@ function Point(props) {
 	eval(this.graph).array[this.className].push(this);	
 }
 
+/*
+Point.prototype = { 
+
+	widthUpdate: function() { 
+		var dist = this.target - this.val,
+			change = dist * this.ease;
+
+		//this.easeIncrement(change);
+	},
+
+	hide: function() { 
+		this.visible = false;
+		this.widthTarget = 0.1;
+	}
+
+}
+*/
 
 
 // WHEN SCRIPT.JS IS LOADED
@@ -613,7 +629,36 @@ Point.prototype.draw = function() {
 	ctx.closePath();
 }
 
+function drawGrid(i) { 
+	ctx.beginPath();
+	ctx.fillStyle = lab.visibleGraphs[i].color;
+	ctx.rect(lab.visibleGraphs[i].box.x0, lab.visibleGraphs[i].box.y0, lab.visibleGraphs[i].box.width, lab.visibleGraphs[i].box.height);
+	ctx.fill()
+	ctx.closePath();
 
+	// Draw the plot in white 
+	ctx.beginPath();
+	ctx.fillStyle = "white";
+	ctx.rect(lab.visibleGraphs[i].plot.x0, lab.visibleGraphs[i].plot.y0, lab.visibleGraphs[i].plot.width, lab.visibleGraphs[i].plot.height);
+	ctx.fill()
+	ctx.closePath();
+
+	ctx.strokeStyle = "lightgrey";
+	ctx.lineWidth = 3;
+	for (j = 0; j <= lab.visibleGraphs[i].scaleX; j++) { 
+	    ctx.beginPath();
+		ctx.moveTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(0));
+		ctx.lineTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(lab.visibleGraphs[i].scaleY));
+		ctx.stroke();
+	}
+	for (j = 0; j <= lab.visibleGraphs[i].scaleY; j++) { 
+	    ctx.beginPath();
+		ctx.moveTo(lab.visibleGraphs[i].pixelX(0), lab.visibleGraphs[i].pixelY(j));
+		ctx.lineTo(lab.visibleGraphs[i].pixelX(lab.visibleGraphs[i].scaleX), lab.visibleGraphs[i].pixelY(j));
+		ctx.stroke();
+	}
+	ctx.closePath();
+}
 
 // Performance monitoring for development purposes
 var stats = new Stats(); stats.showPanel( 0 ); document.body.appendChild( stats.dom );
@@ -632,42 +677,18 @@ function drawScreen() {
 	ctx.fillStyle = "orange";
 	ctx.fillRect(0,0,canvasVar.width,canvasVar.height);	
 
+	lab.variableUpdate()
+
 	// Loop over the graphs to draw them
 	for (var i in lab.visibleGraphs) {
-		ctx.beginPath();
-		ctx.fillStyle = lab.visibleGraphs[i].color;
-		ctx.rect(lab.visibleGraphs[i].box.x0, lab.visibleGraphs[i].box.y0, lab.visibleGraphs[i].box.width, lab.visibleGraphs[i].box.height);
-		ctx.fill()
-		ctx.closePath();
-
-		// Draw the plot in white 
-		ctx.beginPath();
-		ctx.fillStyle = "white";
-		ctx.rect(lab.visibleGraphs[i].plot.x0, lab.visibleGraphs[i].plot.y0, lab.visibleGraphs[i].plot.width, lab.visibleGraphs[i].plot.height);
-		ctx.fill()
-		ctx.closePath();
-
-		ctx.strokeStyle = "lightgrey";
-		ctx.lineWidth = 3;
-		for (j = 0; j <= lab.visibleGraphs[i].scaleX; j++) { 
-		    ctx.beginPath();
-			ctx.moveTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(0));
-			ctx.lineTo(lab.visibleGraphs[i].pixelX(j), lab.visibleGraphs[i].pixelY(lab.visibleGraphs[i].scaleY));
-			ctx.stroke();
-		}
-		for (j = 0; j <= lab.visibleGraphs[i].scaleY; j++) { 
-		    ctx.beginPath();
-			ctx.moveTo(lab.visibleGraphs[i].pixelX(0), lab.visibleGraphs[i].pixelY(j));
-			ctx.lineTo(lab.visibleGraphs[i].pixelX(lab.visibleGraphs[i].scaleX), lab.visibleGraphs[i].pixelY(j));
-			ctx.stroke();
-		}
-		ctx.closePath();
+		
+		drawGrid(i)
 
 		lab.visibleGraphs[i].drawAxes();
 
+		//for(var j in )
 	}
 
-	lab.variableUpdate()
 
 	pointTest.draw()
 

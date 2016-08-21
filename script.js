@@ -28,5 +28,3 @@ var pointTest = new Point({
 	color: "green",
 })
 
-
-var easingPercent = 0.2;
