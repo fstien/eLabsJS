@@ -37,6 +37,9 @@ var lab = {
 	},
 
 	defaults: { 
+		color: "grey",
+		width: 4,
+		scaleXdefault: 10,
 	},
 	
 	mouse: { 
@@ -260,7 +263,7 @@ function Graph(props) {
 	this.ratio = props.ratio || 1;
 
 	// The initial number of unit distances on the horizontal axis
-	this.scaleX = props.scaleX || 10;
+	this.scaleX = props.scaleX || lab.defaults.scaleXdefault;
 
 	// The pixel distance of a unit distance, defined in the setScale method
 	this.unitPixel;
@@ -281,7 +284,7 @@ function Graph(props) {
 	this.plotPadding = props.plotPadding || 4;
 
 	// Object of elements on the graph
-	this.elements = {}
+	this.array = {}
 
 	// Set the default background color to white
 	this.color = props.color || "white";
@@ -382,6 +385,88 @@ Graph.prototype.distY = function(pixelY) {
 	return( (pixelY - this.plot.y0)/this.unitPixel );
 }
 
+function Variable(props) {
+   this.val = props.val || 0;
+   this.min = props.min || 0;
+   this.max = props.max || lab.defaults.scaleXdefault;
+}
+
+
+// The Variable prototype
+Variable.prototype = {
+	// Safe way of setting a new value
+	set: function(value) { 
+		if(value > this.max) { 
+			this.val = this.max;
+		}
+		else if(value < this.min) { 
+			this.val = this.min;
+		}
+		else { 
+			this.val = value;
+		}
+	},
+	// Increment the variable
+	add: function(increment) { 
+		this.val = this.val + increment;
+		this.val = Math.min(Math.max(this.val, this.min), this.max);
+	},
+	// Return the rounded variable
+	round: function() { 
+		return( Math.round(this.val) )
+	}
+};
+
+
+/*
+	// Set the default number of axes to 2
+	this.axes = props.axes || 2, 
+*/
+
+// _________________ Point _________________
+
+// The point constructor which takes Variable objects as inputs
+function Point(props) { 
+	this.graph = props.grap || lab.graphArray[0];
+	
+	/*
+	if(props.point[0] instanceof Variable) { 
+		this.x = point[0];
+	}
+	else { 
+		this.x = {};
+		this.x.val = point[0];
+	}
+
+	if(props.point[1] instanceof Variable) { 
+		this.y = point[1];
+	}
+	else { 
+		this.y = {};
+		this.y.val = point[1];
+	}
+	*/
+	this.x = {};
+	this.x.val = point[0];
+
+	this.y = {};
+	this.y.val = point[1];
+	
+	this.color = props.color || lab.defaults.color;
+	this.hoverColor = props.scolor || lab.defaults.color;
+
+	this.width = prop.width || lab.defaults.width;
+
+	this.hover = false;
+
+	this.visible = true;
+
+	// Set the className property to the constructor function name
+	this.className = arguments.callee.toString().match(/function\s+([^\s\(]+)/)[1];	
+
+	// Push to the array of points for the chose graph object
+	eval(graph).array[funcName].push(this);	
+}
 
 
 
@@ -435,7 +520,7 @@ Graph.prototype.drawAxes = function() {
 	ctx.strokeStyle = 'black';
 	ctx.lineWidth = 5;
 	ctx.lineCap = 'round';
-	
+
 	//console.log(this.axes)
 	switch(this.axes) { 
 		case 1: 
