@@ -246,7 +246,6 @@ var lab = {
 		for (var i in this.graphArray) {
 			this.graphArray[i].setPlot();
 			this.graphArray[i].setScale(this.graphArray[i].scaleX);
-			this.graphArray[i].setAxes()
 		}
 
 	}
@@ -270,7 +269,7 @@ function Graph(props) {
 	this.scaleY;	
 
 	// Whether or not the graph appears 
-	this.visible = false;
+	this.visible = true;
 
 	// Create the empty box object which will store coordinates for the box including paddings
 	this.box = {};
@@ -287,14 +286,8 @@ function Graph(props) {
 	// Set the default background color to white
 	this.color = props.color || "white";
 
-	// Set the default number of axes to 1
-	this.axes = { 
-		count: 2 || props.axes.count, 
-		visible: true,
-		pos: {
-			// x0, x1, y1, y2
-		}
-	}
+	// Set the default number of axes to 2
+	this.axes = props.axes || 2, 
 
 	// Boolean for if the graph is being hovered
 	this.hover = false;
@@ -389,14 +382,6 @@ Graph.prototype.distY = function(pixelY) {
 	return( (pixelY - this.plot.y0)/this.unitPixel );
 }
 
-Graph.prototype.setAxes = function() {
-	// Define the cartesian coordinates of the origin
-	this.axes.pos.x0 = this.plot.x0;
-	this.axes.pos.y0 = this.plot.y0;
-
-	this.axes.pos.x1 = this.plot.x0 + this.plot.width;
-	this.axes.pos.y1 = this.plot.y0 + this.plot.height;	
-}
 
 
 
@@ -445,19 +430,54 @@ $("#splitter").mouseup(function() {
 });
 
 
+
 Graph.prototype.drawAxes = function() { 
 	ctx.strokeStyle = 'black';
 	ctx.lineWidth = 5;
 	ctx.lineCap = 'round';
+	
+	//console.log(this.axes)
+	switch(this.axes) { 
+		case 1: 
+			ctx.beginPath();
+			ctx.moveTo(this.plot.x0, this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0);
+			ctx.stroke();
+			ctx.closePath();			
+			break
+		case 2: 
+			ctx.beginPath();
+			ctx.moveTo(this.plot.x0, this.plot.y0 + this.plot.height);
+			ctx.lineTo(this.plot.x0 , this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0);
+			ctx.stroke();
+			ctx.closePath();
+			break
 
+		case 3: 
+			ctx.beginPath();
+			ctx.moveTo(this.plot.x0, this.plot.y0 + this.plot.height);
+			ctx.lineTo(this.plot.x0 , this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0 + this.plot.height);
+			ctx.stroke();
+			ctx.closePath();
+			break
 
-	ctx.beginPath();
-	ctx.moveTo(this.axes.pos.x1, this.axes.pos.y0);
-	ctx.lineTo(this.axes.pos.x0 , this.axes.pos.y0);
-	ctx.lineTo(this.axes.pos.x0, this.axes.pos.y1);
-	ctx.stroke();
-	ctx.closePath();
+		case 4: 
+			ctx.beginPath();
+			ctx.moveTo(this.plot.x0, this.plot.y0 + this.plot.height);
+			ctx.lineTo(this.plot.x0 , this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0);
+			ctx.lineTo(this.plot.x0 + this.plot.width, this.plot.y0 + this.plot.height);
+			ctx.lineTo(this.plot.x0, this.plot.y0 + this.plot.height);
+			ctx.stroke();
+			ctx.closePath();
+			break
 
+		default:
+			console.log("Number of axes not in range.")
+	}
 }
 
 
