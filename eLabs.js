@@ -157,7 +157,6 @@ var lab = {
 
 	// Define the box coordinates and dimensions
 	defineBoxes: function() { 
-
 		if(lab.UI.browser.mobile) { 
 			for (var i in this.visibleGraphs) {
 	         	// Initial height is the height of the canvas
@@ -228,23 +227,18 @@ var lab = {
 	}, 
 
 	setAllPlots: function() { 
-
 		var totalDist = 0;
 		var distCount = 0
-
 		// Compute the sum of the widths and heights of boxes and the number of sides
 		for(var i in this.visibleGraphs) { 
 			totalDist += this.visibleGraphs[i].box.width;
 			totalDist += this.visibleGraphs[i].box.height;
 			distCount += 2;
 		}
-
 		// Compute the mean
 		var meanDist = totalDist/distCount;
-
 		// Set a different padding for mobile and desktop
 		this.UI.canvas.padding = this.UI.browser.mobile ? meanDist*0.12 : meanDist*0.12;
-
 		// Define the plot as soon as the graph is defined
 		for (var i in this.graphArray) {
 			this.graphArray[i].setPlot();
@@ -284,7 +278,9 @@ function Graph(props) {
 	this.plotPadding = props.plotPadding || 4;
 
 	// Object of elements on the graph
-	this.array = {}
+	this.array = {
+		Point: [],
+	}
 
 	// Set the default background color to white
 	this.color = props.color || "white";
@@ -385,6 +381,8 @@ Graph.prototype.distY = function(pixelY) {
 	return( (pixelY - this.plot.y0)/this.unitPixel );
 }
 
+// _________________ Variable _________________
+
 function Variable(props) {
    this.val = props.val || 0;
    this.min = props.min || 0;
@@ -411,51 +409,40 @@ Variable.prototype = {
 		this.val = this.val + increment;
 		this.val = Math.min(Math.max(this.val, this.min), this.max);
 	},
+
 	// Return the rounded variable
 	round: function() { 
 		return( Math.round(this.val) )
-	}
+	},
 };
-
-
-/*
-	// Set the default number of axes to 2
-	this.axes = props.axes || 2, 
-*/
 
 // _________________ Point _________________
 
 // The point constructor which takes Variable objects as inputs
 function Point(props) { 
-	this.graph = props.grap || lab.graphArray[0];
+	this.graph = props.graph || lab.graphArray[0];
 	
-	/*
-	if(props.point[0] instanceof Variable) { 
-		this.x = point[0];
+	
+	if(props.x instanceof Variable) { 
+		this.x = props.x;
 	}
 	else { 
 		this.x = {};
-		this.x.val = point[0];
+		this.x.val = props.x;
 	}
 
-	if(props.point[1] instanceof Variable) { 
-		this.y = point[1];
+	if(props.y instanceof Variable) { 
+		this.y = props.y;
 	}
 	else {  
 		this.y = {};
-		this.y.val = point[1];
+		this.y.val = props.y;
 	}
-	*/
-	this.x = {};
-	this.x.val = point[0];
-
-	this.y = {};
-	this.y.val = point[1];
 	
 	this.color = props.color || lab.defaults.color;
 	this.hoverColor = props.scolor || lab.defaults.color;
 
-	this.width = prop.width || lab.defaults.width;
+	this.width = props.width || lab.defaults.width;
 
 	this.hover = false;
 
@@ -465,7 +452,7 @@ function Point(props) {
 	this.className = arguments.callee.toString().match(/function\s+([^\s\(]+)/)[1];	
 
 	// Push to the array of points for the chose graph object
-	eval(graph).array[funcName].push(this);	
+	eval(this.graph).array[this.className].push(this);	
 }
 
 
@@ -477,7 +464,7 @@ $(document).ready(function() {
 var devicePixelRatio = window.devicePixelRatio || 1;
 // determine the backing store ratio
 var backingStoreRatio = ctx.webkitBackingStorePixelRatio || ctx.mozBackingStorePixelRatio || ctx.msBackingStorePixelRatio || ctx.oBackingStorePixelRatio ||ctx.backingStorePixelRatio || 1;
-lab.UI.pixelRatio = (devicePixelRatio/backingStoreRatio)*2;
+lab.UI.pixelRatio = (devicePixelRatio/backingStoreRatio)*1;
 
 // Apply different CSS properties depending on whether the device is mobile
 lab.setCSS()
@@ -565,6 +552,21 @@ Graph.prototype.drawAxes = function() {
 	}
 }
 
+Variable.prototype.update = function() { 
+	this.add(closureChange);
+}
+
+Point.prototype.draw = function() { 
+	ctx.fillStyle = this.color;
+
+    ctx.beginPath();
+	ctx.arc(this.graph.pixelX(this.x.val), this.graph.pixelY(this.y.val), this.width, 0, 2 * Math.PI, true);
+
+	ctx.fill();
+	ctx.closePath();
+}
+
+
 
 // Performance monitoring for development purposes
 var stats = new Stats(); stats.showPanel( 0 ); document.body.appendChild( stats.dom );
@@ -617,6 +619,11 @@ function drawScreen() {
 		lab.visibleGraphs[i].drawAxes();
 
 	}
+
+	XPoint.update();
+
+
+	pointTest.draw()
 
 	if(!lab.UI.browser.mobile) {  
 		$("#text1").text( JSON.stringify( "X: " + lab.mouse.x ));

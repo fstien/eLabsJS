@@ -18,3 +18,16 @@ var XPoint = new Variable({
 var YPoint = new Variable({
 	val: 2
 })
+
+var pointTest = new Point({ 
+	graph: second,
+	x: XPoint,
+	y: YPoint,
+	width: 20,
+	color: "green",
+})
+
+
+var closureChange = 0.01;
+
+closureChange = -0.01;
