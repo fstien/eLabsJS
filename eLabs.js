@@ -409,7 +409,7 @@ Variable.prototype = {
 		this.val = this.val + increment;
 		this.val = Math.min(Math.max(this.val, this.min), this.max);
 	},
-
+   
 	// Return the rounded variable
 	round: function() { 
 		return( Math.round(this.val) )
